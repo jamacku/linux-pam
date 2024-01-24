@@ -1,0 +1,64 @@
+# Docs: https://packit.dev/docs/configuration
+# inspired by systemd Packit config - https://github.com/systemd/systemd/blob/main/.packit.yml
+
+specfile_path: .packit_rpm/pam.spec
+files_to_sync:
+  - .packit.yml
+  - src: .packit_rpm/pam.spec
+    dest: pam.spec
+upstream_package_name: linux-pam
+downstream_package_name: pam
+
+# package list from ci/install-dependencies.sh
+srpm_build_deps:
+  - autoconf
+  - automake
+  - autogen
+  - make
+  - libtool
+  - gettext-devel
+  - bison
+  - bzip2
+  - flex
+  - w3m
+  - elinks
+  - fop
+  - libdb-devel
+  - libeconf-devel
+  - libnsl2-devel
+  - libtirpc-devel
+  - linuxdoc-tools
+  - sed
+  - docbook5-schemas
+  - docbook5-style-xsl
+  - docbook-dtds
+  - docbook-style-xsl
+  - libxslt
+  - xz
+  - pkgconf-pkg-config
+  - libxml2
+  - openssl-devel
+  - selinux-policy-devel
+  - libselinux-devel
+
+actions:
+  post-upstream-clone:
+    # Use the Fedora Rawhide specfile
+    - git clone https://src.fedoraproject.org/rpms/pam .packit_rpm --depth=1
+    # Drop the "sources" file so rebase-helper doesn't think we're a dist-git
+    - rm -fv .packit_rpm/sources
+    # Drop backported patches from the specfile, downstream doesn't mark the downstream-only ones so drop all
+    - sed -ri '/^Patch(\\d+)?/d' .packit_rpm/pam.spec
+    - sed -ri '/^%patch(\\d+)?/d' .packit_rpm/pam.spec
+  create-archive:
+    - ./autogen.sh
+    - ./configure --disable-dependency-tracking --enable-Werror
+    - make dist-gzip
+    - bash -c "echo Linux-PAM-$(grep AC_INIT configure.ac | cut -d' ' -f2 | tr -d '[]' | cut -d ',' -f1).tar.gz"
+
+jobs:
+  - job: copr_build
+    trigger: pull_request
+    targets:
+      - fedora-rawhide
+      - fedora-stable
