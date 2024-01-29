@@ -51,6 +51,7 @@ actions:
     # Drop backported patches from the specfile, downstream doesn't mark the downstream-only ones so drop all
     - sed -ri '/^Patch(\\d+)?/d' .packit_rpm/pam.spec
     - sed -ri '/^%patch(\\d+)?/d' .packit_rpm/pam.spec
+    - sed -ri '/pam_chroot.so/d' .packit_rpm/pam.spec
   create-archive:
     - ./autogen.sh
     - ./configure --disable-dependency-tracking --enable-Werror
